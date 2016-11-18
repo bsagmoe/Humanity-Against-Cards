@@ -62,8 +62,8 @@ $(document).ready(function(){
     //       after they have been dynamically created by the game (with the correct z-indicies for it to look right),
     //       subtract one from each one, then set the card that is being enterd as the highest z-index (like the number of cards)
     $(".white").mouseenter(function(event){
-      $(".white").css("zIndex", "0");
-      $(this).css("zIndex", "1");
+      $(".white").css("zIndex", "-=1");
+      $(this).css("zIndex", "6");
     });
 
   }
