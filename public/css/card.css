@@ -1,0 +1,34 @@
+.card {
+  display: inline-block;
+  position: relative;
+  width: 250px;
+  height: 350px;
+  font-size: 2em;
+  font-weight: bold;
+  border-radius: 25px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+  transition: box-shadow .2s ease-in-out;
+}
+
+.card span {
+  display: block;
+  padding-top: 25px;
+  margin: auto 25px;
+}
+
+.card:hover {
+  box-shadow: 0 5px 10px #333333;
+}
+
+
+.black {
+  font-size: 1.5em;   /* to accomadate for the larger amounts of text that show up*/
+  line-height: 1.2em;
+  background-color: #333333;
+  color: #f2f2f2;
+}
+
+.white {
+  background-color: #f2f2f2;
+  color: #333333;
+}
