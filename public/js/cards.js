@@ -1,4 +1,49 @@
-var whiteCards = [
+class Deck {
+	// By passing in a deck here, we can modify the local copy and also allow for
+	// subsets of WHITE_CARDS and BLACK_CARDS below to be passed in (e.g. NSFW vs SFW)
+	constructor(whiteCards, blackCards) {
+		this.whiteCards = whiteCards.slice();	// slice() with no params is the same as copy()
+		this.blackCards = blackCards.slice();
+	}
+
+	drawStartingHand(handSize){
+		let hand = [];
+		if(handSize > this.whiteCards.length){
+			return false;
+		} else {
+			for(let i = 0; i < handSize; i++){
+				hand.push(this.drawWhiteCard());
+			}
+
+			return hand;
+		}
+	}
+
+	drawWhiteCard(){
+		if(this.whiteCards.length < 1){
+			return false;
+		} else {
+			let index = getRandomInt(0, this.whiteCards.length);
+			let card = this.whiteCards[index];
+			this.whiteCards.splice(index, 1); // remove the card from the deck
+			return card;
+		}
+	}
+
+	drawBlackCard(){
+		if(this.blackCards.length < 1){
+			return false;
+		} else {
+			let index = getRandomInt(0, this.blackCards.length);
+			let card = this.blackCards[index];
+			this.blackCards.splice(index, 1); // remove the card from the deck
+			return card;
+		}
+	}
+
+}
+
+const WHITE_CARDS = [
 	"A bucket of fish heads.",
 	"Silence.",
 	"The unstoppable tide of Islam.",
@@ -1051,8 +1096,7 @@ var whiteCards = [
 	"Horse legs.",
 	"A postracial utopia."
 ];
-
-var blackCards = [
+const BLACK_CARDS = [
 	"What ended my last relationship?",
 	"__________. It's a trap!",
 	"__________. High five, bro.",
@@ -1285,5 +1329,9 @@ var blackCards = [
 	"Hey Reddit! I'm __________. Ask me anything.",
 	"I'm going on a cleanse this week. Nothing but kale juice and __________.",
 	"Well, gentlemen! If you'll excuse me, I have a date with __________.",
-	"Our demands are quite simple. We will execute a hostage every hour until you bring us _______."
+	"Our demands are quite simple. We will execute a hostage every hour until you bring us __________."
 ];
+
+// TODO: Filter out the cards that are NSFW
+const SFW_WHITE_CARDS = WHITE_CARDS.slice();
+const SFW_BLACK_CARDS = BLACK_CARDS.slice();
