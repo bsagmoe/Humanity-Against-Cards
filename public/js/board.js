@@ -18,11 +18,19 @@ class Board {
     this.gameStats = gameStats;
   }
 
-  // draws the correct board for the given player
-  // playerId is the unique id of the current player in the current game session
-  //   - not necessairly the one stored in the Player database, as we want to allow for
-  //     anonymous players
-  //   - only needs to be unique within the context of the HACGame object
+  updatePlayer(player){
+    // used to update the player each time it is sent from the server (i.e. each new round)
+    this.player = player;
+  }
+
+  updateRoundInfo(roundInfo){
+    this.roundInfo = roundInfo;
+  }
+
+  updateGameStats(gameStats){
+    this.gameStats = gameStats;
+  }
+
   drawBoard(){
     if(this.player.isCardCzar){
       this.drawCzarView();
@@ -73,6 +81,8 @@ class Board {
 
     $(".white").mouseenter(function(event){
       $(".white").css("zIndex", "-=1");
+      // 10 *  cards.length makes it so that it's very unlikely the bottomost cards
+      // will have a negative z-index (i.e. it won't likely show up behind the black card)
       $(this).css("zIndex", cards.length * 10);
     });
 
@@ -109,6 +119,7 @@ $(document).ready(function(){
     game.addPlayer(player2);
 
     game.startGame();
+    game.registerEventHandler()
 
     let board1 = new Board($("#player1"), player1, game.roundInfo);
     let board2 = new Board($("#player2"), player2, game.roundInfo);
