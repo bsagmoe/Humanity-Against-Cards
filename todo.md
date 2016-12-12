@@ -1,4 +1,5 @@
 # Future things
+- Actually implement cards with two blanks
 - Give the Card Czar three options of black card to choose from
 - Add additional decks such as the expansions
 - Implement more gameplay styles and rules
