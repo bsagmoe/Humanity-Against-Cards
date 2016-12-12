@@ -24,7 +24,7 @@ class GameSettings {
 const ROUND_STATUS = {
   SUBMITTING: 0,  // The proles submit their cards (and everybody sees how many are left to submit)
   JUDGING: 1,     // The judge picks which one they like the most
-  END_OF_ROUND: 2 // The judges pick is diplayed to everybody
+  END_OF_ROUND: 2 // The judge's pick is diplayed to everybody
 }
 
 class RoundInfo {
@@ -38,17 +38,20 @@ class RoundInfo {
   }
 
   // used when switching rounds
-  update(blackCard, roundStatus, cardCzar){
+  update(blackCard, roundStatus){
     this.roundNumber++;
     this.blackCard = blackCard;
     this.isSubmitTwo = isSubmitTwo(blackCard);
     this.roundStatus = roundStatus;
-    this.cardCzar = cardCzar;
     this.submittedCards = null;
   }
 
   updateStatus(roundStatus){
     this.roundStatus = roundStatus;
+  }
+
+  updateCardCzar(cardCzar){
+    this.cardCzar = cardCzar;
   }
 }
 
@@ -129,12 +132,12 @@ const GAME_STATUS = {
 };
 
 const GAME_EVENTS = {
-  CARD_SUBMITTED_EVENT: 0,
-  CARDS_COLLECTED_EVENT: 1,
-  CARDS_JUDGED_EVENT: 2,
-  ROUND_CHANGE_EVENT: 3,
-  GAME_OVER_EVENT: 4,
-  ALL_EVENTS: 5
+  CARDS_DEALT_EVENT: 0,
+  SUBMITTED_CARD_CHANGED_EVENT: 1,
+  CARDS_COLLECTED_EVENT: 2,
+  CARDS_JUDGED_EVENT: 3,
+  ROUND_CHANGE_EVENT: 4,
+  GAME_OVER_EVENT: 5,
 }
 
 class HumanityAgainstCards {
@@ -145,11 +148,11 @@ class HumanityAgainstCards {
 
     this.players = [];      // the players in this current game
     this.cardCzar = null;   // the czar of the current round
-    this.winner = null;     // the winner of the previous round
+    this.winner = null;     // the winner of the whole game
     this.roundInfo = new RoundInfo(0, null, null, null);  // the RoundInfo object that gets sent to the clients
+    this.gameStats = null;
 
     this.submittedCards = {};
-
     this.registeredEventHandlers = {};
 
     // Setup the deck depending on the user options
@@ -254,14 +257,52 @@ class HumanityAgainstCards {
     }
   }
 
-  // TODO: instead of automatically submitting changes once the threshold is reached,
-  //       this should send updates to the czar, who can then click a collect button
-  //       the same mechanism would give realtime updates to the submission counter (i.e. 5/7 submitted)
-  updateSubmission(player){
-    console.log("updating " + player.name + "'s submission");
+
+  signalReadyForSubmission(playerString){
+    let player = JSON.parse(playerString);
     this.submittedCards[player.id] = player.submittedCard;
+
+    for(let i = 0; i < this.players.length; i++){
+      if(player.id == this.players[i].id){
+        this.players[i].setSubmittedCard(player.submittedCard);
+      }
+    }
+
+    // TODO: instead of automatically submitting changes once the threshold is reached,
+    //       this should send updates to the czar, who can then click a collect button
+    //       the same mechanism would give realtime updates to the submission counter (i.e. 5/7 submitted)
     if(Object.keys(this.submittedCards).length == this.players.length - 1){
       this.collectSubmissions();
+    }
+
+    let handlers = this.registeredEventHandlers[GAME_EVENTS.SUBMITTED_CARD_CHANGED_EVENT];
+    if (handlers != null) {
+        for (let i = 0; i < handlers.length; i++) {
+          for (let j = 0; j < this.players.length; j++){
+            handlers[i](Object.keys(this.submittedCards).length, this.players.length - 1);
+          }
+        }
+    }
+  }
+
+  signalNotReadyForSubmission(playerString){
+    let player = JSON.parse(playerString);
+
+    for(let i = 0; i < this.players.length; i++){
+      if(player.id == this.players[i].id){
+        this.players[i].setSubmittedCard(null);
+      }
+    }
+
+    delete this.submittedCards[player.id];
+
+    let handlers = this.registeredEventHandlers[GAME_EVENTS.SUBMITTED_CARD_CHANGED_EVENT];
+    if (handlers != null) {
+        for (let i = 0; i < handlers.length; i++) {
+          for (let j = 0; j < this.players.length; j++){
+            handlers[i](Object.keys(this.submittedCards).length, this.players.length - 1);
+          }
+        }
     }
   }
 
@@ -284,6 +325,7 @@ class HumanityAgainstCards {
 
 
     // With the socket code, we should be able to send one player only their Player object!
+
     let handlers = this.registeredEventHandlers[GAME_EVENTS.CARDS_COLLECTED_EVENT];
     if (handlers != null) {
         for (let i = 0; i < handlers.length; i++) {
@@ -296,26 +338,70 @@ class HumanityAgainstCards {
 
   }
 
+  dealCards(){
+    for(let i = 0; i < this.players.length; i++){
+      while(this.players[i].hand.length < this.gameSettings.handSize){
+        this.players[i].addWhiteCard(this.deck.drawWhiteCard());
+      }
+    }
+  }
+
   // Each round follows a lifecycle of beginRound (starts the process of submitting cards)
   // followed by beginJudging (what it sounds like)
   // and engind with endRound (gets ready for next round or ends the game)
   beginRound(){
+    this.dealCards();
+    this.roundInfo.update(this.deck.drawBlackCard(), ROUND_STATUS.SUBMITTING);
+    this.submittedCards = {};
     for(let i = 0; i < this.players.length; i++){
       this.players[i].submittedCard = null; // reset the player state
     }
+
+
+    let handlers = this.registeredEventHandlers[GAME_EVENTS.CARDS_COLLECTED_EVENT];
+    if (handlers != null) {
+        for (let i = 0; i < handlers.length; i++) {
+          for (let j = 0; j < this.players.length; j++){
+            // TODO: implement game stats and update code here
+            handlers[i](JSON.stringify(this.players[j]), JSON.stringify(this.roundInfo), null);
+          }
+        }
+    }
   }
 
-  beginJudging(){
+  judge(winningCard){
+    let roundWinner = null;
+    for(let i = 0; i < this.players.length; i++){
+      console.log(this.players[i].submittedCard, winningCard);
+      if(this.players[i].submittedCard === winningCard){
+        console.log(this.players[i]);
+        this.players[i].victoryPoints++;
+        this.players[i].cardsWon.push(this.roundInfo.blackCard);
+        roundWinner = this.players[i];
+        break;
+      }
+    }
 
+    this.roundInfo.updateStatus(ROUND_STATUS.END_OF_ROUND);
+
+    // TODO: call the END_OF_ROUND listeners
+
+    let that = this;
+    setTimeout(function (that) {
+      that.cardCzar.makeProletariat();  // make the current Czar a Prole
+      that.cardCzar = roundWinner;
+      that.cardCzar.makeCardCzar();     // and make the round winner the Czar
+      that.roundInfo.updateCardCzar(that.cardCzar);
+
+      that.endRound();
+    }(that), 5000);
   }
 
   endRound(){
-    if(this.roundInfo.roundNumber < gameSettings.numRounds){
-      this.roundInfo.update(this.deck.drawBlackCard(), ROUND_STATUS.SUBMITTING, this.winner);
-      this.submittedCards = {};
-      this.dealCards();
+    if(this.roundInfo.roundNumber < this.gameSettings.numRounds){
       this.beginRound();
     } else {
+      console.log("ending the game");
       let maxPoints = -Infinity;
       let winner = null;
 
@@ -329,15 +415,19 @@ class HumanityAgainstCards {
       this.winner = winner;
       this.gameStatus = GAME_STATUS.FINISHED;
       // TODO: alert GAME_OVER_EVENT and ALL_EVENTS listeners
+
+      let handlers = this.registeredEventHandlers[GAME_EVENTS.GAME_OVER_EVENT];
+      if (handlers != null) {
+          for (let i = 0; i < handlers.length; i++) {
+            for (let j = 0; j < this.players.length; j++){
+              handlers[i](JSON.stringify(this.winner), JSON.stringify(this.gameStats));
+            }
+          }
+      }
+
     }
   }
 
-  dealCards(){
-    for(let i = 0; i < this.players.length; i++){
-      while(this.players[i].hand.length < this.gameSettings.handSize){
-        this.players[i].addWhiteCard(this.deck.drawWhiteCard);
-      }
-    }
-  }
+
 
 }
