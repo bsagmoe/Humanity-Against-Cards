@@ -142,7 +142,6 @@ class HumanityAgainstCards {
     this.gameId = makeId(20);
     this.gameStatus = GAME_STATUS.INITIALIZING;
     this.gameSettings = gameSettings; // GameSettings object
-    console.log(this.gameSettings);
 
     this.players = [];      // the players in this current game
     this.cardCzar = null;   // the czar of the current round
@@ -255,6 +254,9 @@ class HumanityAgainstCards {
     }
   }
 
+  // TODO: instead of automatically submitting changes once the threshold is reached,
+  //       this should send updates to the czar, who can then click a collect button
+  //       the same mechanism would give realtime updates to the submission counter (i.e. 5/7 submitted)
   updateSubmission(player){
     console.log("updating " + player.name + "'s submission");
     this.submittedCards[player.id] = player.submittedCard;
@@ -266,18 +268,18 @@ class HumanityAgainstCards {
   // called either when everybody has submitted their cards or after the timer
   // for submissions has reached its limit
   collectSubmissions(){
-    let submittedCards = [];
+    let submittedCardsArray = [];
 
     for(let i = 0; i < this.players.length; i++){
       // handles removing the card from their hand
       // TODO: probably need to send the player id as well
       if(this.players[i].id != this.cardCzar.id){
-        submittedCards.push(this.players[i].submitCard());
+        submittedCardsArray.push(this.players[i].submitCard());
       }
     }
 
     this.roundInfo.updateStatus(ROUND_STATUS.JUDGING);
-    this.roundInfo.submittedCards = submittedCards;
+    this.roundInfo.submittedCards = submittedCardsArray;
     console.log(this.roundInfo);
 
 

@@ -75,7 +75,7 @@ class Board {
   }
 
   drawSubmittingProletariatView(){
-    this.drawBlackCardAndSubmitLocation(this.roundInfo.blackCard);
+    this.drawBlackCard(this.roundInfo.blackCard);
     this.drawHand(this.player.hand);
   }
 
@@ -109,16 +109,8 @@ class Board {
         scroll: false,
         stop: function(){
           let pos = $(this).position();
-          let otherPos = null;
-
-          // When we're submitting cards, we're looking for it to be on the submit location
-          if(that.roundInfo.roundStatus == ROUND_STATUS.SUBMITTING){
-            otherPos = $("#" + that.player.id + "submit").position();
-
-          // When we're judging cards, we're looking for it to be on the black card
-          } else if(that.roundInfo.roundStatus == ROUND_STATUS.JUDGING){
-            otherPos = $(".black").position();
-          }
+          // will only need to be ".black" when in production
+          let otherPos = $("#" + that.player.id).position();
 
           if(Math.abs(pos.left - otherPos.left) <= CARD_WIDTH/4 && Math.abs(pos.top - otherPos.top) <= CARD_HEIGHT/4){
 
@@ -132,6 +124,7 @@ class Board {
             	    }
             	}
             } else if(that.roundInfo.roundStatus == ROUND_STATUS.JUDGING){
+              console.log("Submitting judged card: " + cards[i]);
               let handlers = that.registeredEventHandlers[GAME_EVENTS.CARDS_JUDGED_EVENT];
             	if (handlers != null) {
             	    for (let i = 0; i < handlers.length; i++) {
@@ -170,6 +163,7 @@ class Board {
   drawBlackCard(blackCard){
     let card = $(document.createElement("div"));
     card.addClass("black card");
+    card.attr("id", this.player.id);
 
     let text = document.createElement("span");
     text.innerHTML = blackCard;
@@ -181,34 +175,6 @@ class Board {
     // TODO: Make this better, haha
     card.css("top", 100);
     this.boardElement.prepend(card);
-  }
-
-  drawBlackCardAndSubmitLocation(blackCard){
-    let card = $(document.createElement("div"));
-    let submit = $(document.createElement("div"));
-    card.addClass("black card");
-    submit.addClass("submit card");
-    submit.attr("id", this.player.id + "submit");  // useful for one screen testing
-
-    let text = document.createElement("span");
-    text.innerHTML = blackCard;
-    card.append(text);
-
-    let submitText = document.createElement("span");
-    submitText.innerHTML = "Submit card";
-    submit.append(submitText);
-
-    card.css("position", "absolute");
-    submit.css("position", "absolute");
-
-    card.css("left", this.boardElement.width()/2 - CARD_WIDTH - 10 + this.boardElement.position().left);
-    submit.css("left", this.boardElement.width()/2 + 10 + this.boardElement.position().left);
-
-    card.css("top", 100);   // Make the top value adaptive instead of hardcoded
-    submit.css("top", 100);
-
-    this.boardElement.prepend(card);
-    this.boardElement.prepend(submit);
   }
 }
 
