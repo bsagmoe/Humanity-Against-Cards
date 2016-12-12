@@ -10,6 +10,19 @@
   transition: box-shadow .2s ease-in-out;
 }
 
+.submit {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  background-color: #555555;
+  color: #888888;
+}
+
+.submit span{
+  padding-bottom: 25px; /* mirrors the padding on the top so that the element centers vertically */
+  width: 100%;
+}
+
 .card span {
   display: block;
   padding-top: 25px;
