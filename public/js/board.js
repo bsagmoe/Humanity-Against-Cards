@@ -1,17 +1,14 @@
 // TODO: let these constants be defined in init.js instead of having to be fixed values
+const CARD_WIDTH = 250
+const CARD_HEIGHT = 350
+const CARD_OFFSET = 150
+const SPACING = 50
+const BOTTOM_OFFSET = -50
 
-// NOTE: change these back to regular for the full thing
-const CARD_WIDTH = 250/2
-const CARD_HEIGHT = 350/2
-const CARD_OFFSET = 150/2
-const SPACING = 50/2
-const BOTTOM_OFFSET = -50/2
-
-// this is the the client side code
-// using some of the nice ES6 syntax!
 class Board {
 
   // TODO: implement the GameStats classes
+  // NOTE: player is just a JSON object, it does not have the methods defined in the Player Class on the server side code
   constructor(boardElement, player, roundInfo, gameStats) {
     this.boardElement = boardElement; // boardElement is the jQuery object representing the HTML element in which the board will be drawn
     this.player = player;
@@ -69,24 +66,27 @@ class Board {
   }
 
   drawSubmittingCzarView(){
-    this.boardElement.children(".white").remove();
+    this.boardElement.empty();
+    // this.boardElement.children(".white").remove();
     this.drawBlackCard(this.roundInfo.blackCard);
-    this.boardElement.prepend('<div class="submit-counter" id=' + this.player.id + '-submit-counter></div>');
-    $("#" + this.player.id + "-submit-counter").text("No cards submitted");
+    this.boardElement.prepend('<div class="submit-counter"></div>');
+    $(".submit-counter").text("No cards submitted");
   }
 
   updateNumSubmitted(numSubmitted, numPlayers){
     if(numSubmitted == 0){
-      $("#" + this.player.id + "-submit-counter").text("No cards submitted");
+      $(".submit-counter").text("No cards submitted");
     } else {
-      $("#" + this.player.id + "-submit-counter").text(numSubmitted + " of " + numPlayers + " submitted");
+      $(".submit-counter").text(numSubmitted + " of " + numPlayers + " submitted");
     }
   }
 
   drawSubmittingProletariatView(){
-    this.boardElement.children(".white").remove();
-    this.boardElement.prepend('<div class="submit-counter" id=' + this.player.id + '-submit-counter></div>');
-    $("#" + this.player.id + "-submit-counter").text("No cards submitted");
+    this.boardElement.empty();
+    // this.boardElement.children(".white").remove();
+    // this.boardElement.children(".black").remove();
+    this.boardElement.prepend('<div class="submit-counter"></div>');
+    $(".submit-counter").text("No cards submitted");
 
     this.drawBlackCard(this.roundInfo.blackCard);
     this.drawHand(this.player.hand);
@@ -211,57 +211,3 @@ class Board {
     }
   }
 }
-
-
-// Dummy data to test that everything works as expected
-$(document).ready(function(){
-    let settings = new GameSettings(true, GAME_MODES.NORMAL, 3, 1, 1, 30);
-    let player1 = new Player("bsagmoe");
-    let player2 = new Player("davidwc");
-    let player3 = new Player("zackwd");
-
-    let game = new HumanityAgainstCards(settings);
-
-    game.addPlayer(player1);
-    game.addPlayer(player2);
-    game.addPlayer(player3);
-
-    game.startGame();
-
-    let board1 = new Board($("#player1"), player1, game.roundInfo);
-    let board2 = new Board($("#player2"), player2, game.roundInfo);
-    let board3 = new Board($("#player3"), player3, game.roundInfo);
-
-    let controller1 = new Controller(game, board1);
-    let controller2 = new Controller(game, board2);
-    let controller3 = new Controller(game, board3);
-
-    game.registerEventHandler(GAME_EVENTS.CARDS_COLLECTED_EVENT, controller1.createCardsCollectedHandler(board1));
-    game.registerEventHandler(GAME_EVENTS.CARDS_COLLECTED_EVENT, controller2.createCardsCollectedHandler(board2));
-    game.registerEventHandler(GAME_EVENTS.CARDS_COLLECTED_EVENT, controller3.createCardsCollectedHandler(board3));
-
-    game.registerEventHandler(GAME_EVENTS.SUBMITTED_CARD_CHANGED_EVENT, controller1.createCardSubmittedChangeHandler(board1));
-    game.registerEventHandler(GAME_EVENTS.SUBMITTED_CARD_CHANGED_EVENT, controller2.createCardSubmittedChangeHandler(board2));
-    game.registerEventHandler(GAME_EVENTS.SUBMITTED_CARD_CHANGED_EVENT, controller3.createCardSubmittedChangeHandler(board3));
-
-    game.registerEventHandler(GAME_EVENTS.ROUND_CHANGE_EVENT, controller1.createRoundChangedHandler(board1));
-    game.registerEventHandler(GAME_EVENTS.ROUND_CHANGE_EVENT, controller2.createRoundChangedHandler(board2));
-    game.registerEventHandler(GAME_EVENTS.ROUND_CHANGE_EVENT, controller3.createRoundChangedHandler(board3));
-
-    game.registerEventHandler(GAME_EVENTS.GAME_OVER_EVENT, controller1.createGameOverHandler(board1));
-    game.registerEventHandler(GAME_EVENTS.GAME_OVER_EVENT, controller2.createGameOverHandler(board2));
-    game.registerEventHandler(GAME_EVENTS.GAME_OVER_EVENT, controller3.createGameOverHandler(board3));
-
-    board1.registerEventHandler(GAME_EVENTS.SUBMITTED_CARD_CHANGED_EVENT, controller1.createSubmitToGameHandler(game));
-    board2.registerEventHandler(GAME_EVENTS.SUBMITTED_CARD_CHANGED_EVENT, controller2.createSubmitToGameHandler(game));
-    board3.registerEventHandler(GAME_EVENTS.SUBMITTED_CARD_CHANGED_EVENT, controller3.createSubmitToGameHandler(game));
-
-    board1.registerEventHandler(GAME_EVENTS.CARDS_JUDGED_EVENT, controller1.createJudgeToGameHandler(game));
-    board2.registerEventHandler(GAME_EVENTS.CARDS_JUDGED_EVENT, controller2.createJudgeToGameHandler(game));
-    board3.registerEventHandler(GAME_EVENTS.CARDS_JUDGED_EVENT, controller3.createJudgeToGameHandler(game));
-
-    board1.drawBoard();
-    board2.drawBoard();
-    board3.drawBoard();
-  }
-);
