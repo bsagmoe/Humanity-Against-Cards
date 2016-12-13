@@ -1,0 +1,13 @@
+html
+  head
+    title Humanity Against Cards
+    link(rel='stylesheet', href='../stylesheets/main.css')
+    link(rel='stylesheet', href='../stylesheets/card.css')
+    script(src='https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js')
+    script(src='https://code.jquery.com/ui/1.12.1/jquery-ui.js')
+    script(src='../js/constants.js')
+    script(src='../js/board.js')
+  body
+    script(src='../socket.io/socket.io.js')
+    script!= 'var socket = io.connect("http://localhost:' + port + '");'
+    script(src='../js/client.js')

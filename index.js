@@ -1,22 +1,34 @@
-var express = require('express');
-var app = express();
-var server = require('http').Server(app);
-var bodyParser = require('body-parser');
-
 var constants = require('./js/constants.js');
 var cards = require('./js/cards.js');
 var deck = require('./js/deck.js');
 var game = require('./js/game.js');
 var utils = require('./js/utils.js');
 
-app.set('views', './views');
-app.set('view engine', 'pug');
+var bodyParser = require('body-parser');
+var morgan = require('morgan');
+
+// var express = require('express');
+// var app = express();
+// var server = require('http').Server(app);
+// var io = require('socket.io')(server);
+
+var express = require('express'),
+    app = express(),
+    server = require('http').createServer(app),
+    io = require('socket.io').listen(server);
+
+const PORT = process.argv[2];
+server.listen(PORT || 3000);
 
 // allows access to the static files we need for the game to run
+app.set('views', './views');
+app.set('view engine', 'pug');
+app.use(bodyParser.urlencoded({ extended: false }))
 app.use(express.static('public'));
-app.use(bodyParser.urlencoded({ extended: false }));
 
-var io = require('socket.io')(server);
+// io.set("transports", ["xhr-polling"]);
+// io.set("polling duration", 10);
+
 var usernames = {};
 var rooms = [];
 
@@ -113,12 +125,12 @@ var testGame = new game.HumanityAgainstCards(testSettings, utils.makeId(20), "te
 let games = {};
 games[testGame.gameId] = testGame;
 
-let port = process.argv[2];
-console.log(process.argv);
 
-server.listen(port, function(){
-  console.log("Listening on port " + port);
-});
+// const PORT = process.argv[2] || 3000;
+//
+// server.listen(PORT, function(){
+//   console.log("Listening on port " + PORT);
+// });
 
 // the home page
 app.get('/', function(req, res){
@@ -171,7 +183,8 @@ app.post('/game', function(req, res){
 app.get('/game/:gameId', function(req, res){
   let currentGame = games[req.params.gameId];
   if(currentGame){
-    res.sendFile(__dirname + "/views/game-board.html");
+    // res.sendFile(__dirname + "/views/game-board.html");
+    res.render('game-board', {port: PORT});
   } else {
     res.redirect('/game');
   }
