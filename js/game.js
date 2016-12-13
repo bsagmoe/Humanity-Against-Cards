@@ -39,6 +39,7 @@ const GAME_EVENTS = {
   CARDS_JUDGED_EVENT: 3,
   ROUND_CHANGE_EVENT: 4,
   GAME_OVER_EVENT: 5,
+  PLAYER_ADDED_AFTER_START_EVENT: 6
 }
 
 class GameSettings {
@@ -179,15 +180,33 @@ class HumanityAgainstCards {
   }
 
   addPlayer(player){
-    if(this.gameStatus == GAME_STATUS.INITIALIZING || this.gameStatus == GAME_STATUS.PLAYING && this.roundInfo.roundStatus == ROUND_STATUS.SUBMITTING){
+    if(this.gameStatus != GAME_STATUS.FINISHED){
       this.players.push(player);
 
       if(this.gameStatus == GAME_STATUS.PLAYING){
         player.hand = this.deck.drawStartingHand(this.gameSettings.handSize);
+
+        let handlers = this.registeredEventHandlers[GAME_EVENTS.PLAYER_ADDED_AFTER_START_EVENT];
+        if(handlers != null){
+          for(let i = 0; i < handlers.length; i++){
+              handlers[i](this.roundInfo, this.gameStats);
+          }
+        }
+      }
+
+      let handlers = this.registeredEventHandlers[GAME_EVENTS.SUBMITTED_CARD_CHANGED_EVENT];
+      if (handlers != null) {
+          for (let i = 0; i < handlers.length; i++) {
+            for (let j = 0; j < this.players.length; j++){
+              handlers[i](Object.keys(this.submittedCards).length, this.players.length - 1);
+            }
+          }
       }
 
       // just testing everything out
       if(this.players.length == 3){
+        console.log("Starting the game");
+        console.log(this.players);
         this.startGame();
       }
 
@@ -222,6 +241,14 @@ class HumanityAgainstCards {
       return false;
     } else {
       this.players.splice(index, 1);
+
+      let handlers = this.registeredEventHandlers[GAME_EVENTS.PLAYER_ADDED_AFTER_START_EVENT];
+      if(handlers != null){
+        for(let i = 0; i < handlers.length; i++){
+            handlers[i](this.roundInfo, this.gameStats);
+        }
+      }
+
       return true;
     }
   }
@@ -271,13 +298,14 @@ class HumanityAgainstCards {
               handlers[i](this.roundInfo, this.gameStats);
           }
       }
-      // TODO: the network code to send out messages telling people who's got what
-
 
       this.gameStatus = GAME_STATUS.PLAYING;
     }
   }
 
+  endGame(){
+
+  }
 
   signalReadyForSubmission(player){
     this.submittedCards[player.id] = player.submittedCard;

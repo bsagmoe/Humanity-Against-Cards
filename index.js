@@ -1,6 +1,7 @@
 var express = require('express');
 var app = express();
 var server = require('http').Server(app);
+var bodyParser = require('body-parser');
 
 var constants = require('./js/constants.js');
 var cards = require('./js/cards.js');
@@ -8,80 +9,166 @@ var deck = require('./js/deck.js');
 var game = require('./js/game.js');
 var utils = require('./js/utils.js');
 
-var io = require('socket.io')(server);
-
-var testSettings = new game.GameSettings(false, constants.GAME_MODES.NORMAL, 6, 20, 10, 30, true);
-var defaultDeck = new deck.Deck(cards.WHITE_CARDS, cards.BLACK_CARDS);
-var testGame = new game.HumanityAgainstCards(testSettings, utils.makeId(20), "testGame", defaultDeck);
-
-let games = [];
-games.push(testGame);
-
-server.listen(3000, function(){
-  console.log("Listening on port 3000");
-});
-
-let i = 0;
-io.on('connection', function(socket){
-
-  // TODO: insert database code to get the players name and id
-  let playerName = "player" + i;
-  let playerId = utils.makeId(20);
-  let player = new game.Player(playerName, playerId);
-  i++;
-
-  // if(testGame.gameStatus == constants.GAME_STATUS.PLAYING){
-  //   io.to(socket.id).emit('initialize', JSON.stringify(player), JSON.stringify(testGame.roundInfo), JSON.stringify(testGame.gameStatus));
-  // }
-
-  testGame.registerEventHandler(constants.GAME_EVENTS.GAME_STARTED_EVENT, function(roundInfo, gameStatus){
-    io.to(socket.id).emit('initialize', JSON.stringify(player), JSON.stringify(roundInfo), JSON.stringify(gameStatus))
-  });
-
-  testGame.addPlayer(player);
-
-  // tell all the players that a card has been submitted
-  socket.on('submitCardEvent', function(playerString){
-    let player = JSON.parse(playerString);
-    if(player.submittedCard == null){
-      testGame.signalNotReadyForSubmission(player);
-    } else {
-      testGame.signalReadyForSubmission(player);
-    }
-  });
-
-  // tell all the players that a card has been judged
-  socket.on('cardsJudgedEvent', function(winningCard){
-    testGame.judge(winningCard);
-  });
-
-
-  testGame.registerEventHandler(constants.GAME_EVENTS.SUBMITTED_CARD_CHANGED_EVENT, function(numSubmitted, numPlayers){
-    io.to(socket.id).emit('submittedCardChangedEvent', numSubmitted, numPlayers);
-  });
-
-  testGame.registerEventHandler(constants.GAME_EVENTS.CARDS_COLLECTED_EVENT, function(playerString, roundInfoString, gameStatsString){
-    io.to(socket.id).emit('cardsCollectedEvent', playerString, roundInfoString, gameStatsString);
-  });
-
-  testGame.registerEventHandler(constants.GAME_EVENTS.ROUND_CHANGE_EVENT, function(playerString, roundInfoString, gameStatsString){
-    io.to(socket.id).emit('roundChangedEvent', playerString, roundInfoString, gameStatsString);
-  });
-
-  testGame.registerEventHandler(constants.GAME_EVENTS.GAME_OVER_EVENT, function(winnerString, gameStatsString){
-    io.to(socket.id).emit('gameOverEvent', numSubmitted, numPlayers);
-  });
-
-  socket.on('disconnect', function(){
-    testGame.removePlayer(player);
-  })
-});
-
 app.set('views', './views');
 app.set('view engine', 'pug');
 
 // allows access to the static files we need for the game to run
 app.use(express.static('public'));
+app.use(bodyParser.urlencoded({ extended: false }));
+
+var io = require('socket.io')(server);
+var usernames = {};
+var rooms = [];
+
+io.sockets.on('connection', function(socket){
+  // TODO: if the user is logged in, that will be their ID
+
+  let playerId = utils.makeId(20);
+  let player = null;
+
+  socket.on('addPlayer', function(username, gameId){
+    console.log(username + " added to " + gameId);
+    socket.username = username;
+    socket.room = gameId;
+    usernames[username] = username;
+
+    player = new game.Player(username, playerId);
+
+    socket.join(gameId);
+    socket.emit('playerAdded', "you have connected to game: " + gameId);
+    socket.broadcast.to(gameId).emit('playerAdded', username + ' has joined the game');
+
+    console.log(games);
+
+    games[gameId].registerEventHandler(constants.GAME_EVENTS.SUBMITTED_CARD_CHANGED_EVENT, function(numSubmitted, numPlayers){
+      io.to(socket.id).emit('submittedCardChangedEvent', numSubmitted, numPlayers);
+    });
+
+    games[gameId].registerEventHandler(constants.GAME_EVENTS.CARDS_COLLECTED_EVENT, function(playerString, roundInfoString, gameStatsString){
+      io.to(socket.id).emit('cardsCollectedEvent', playerString, roundInfoString, gameStatsString);
+    });
+
+    games[gameId].registerEventHandler(constants.GAME_EVENTS.ROUND_CHANGE_EVENT, function(playerString, roundInfoString, gameStatsString){
+      io.to(socket.id).emit('roundChangedEvent', playerString, roundInfoString, gameStatsString);
+    });
+
+    games[gameId].registerEventHandler(constants.GAME_EVENTS.GAME_OVER_EVENT, function(winnerString, gameStatsString){
+      io.to(socket.id).emit('gameOverEvent', winnerString, gameStatsString);
+    });
+
+    if(games[gameId].gameStatus == constants.GAME_STATUS.INITIALIZING){
+      games[gameId].registerEventHandler(constants.GAME_EVENTS.GAME_STARTED_EVENT, function(roundInfo, gameStats){
+        io.to(socket.id).emit('initialize', JSON.stringify(player), JSON.stringify(roundInfo), JSON.stringify(gameStats))
+      });
+    } else if(games[gameId].gameStatus == constants.GAME_STATUS.PLAYING){
+      console.log("adding player after game started")
+      games[gameId].registerEventHandler(constants.GAME_EVENTS.PLAYER_ADDED_AFTER_START_EVENT, function(roundInfo, gameStats){
+        io.to(socket.id).emit('initialize', JSON.stringify(player), JSON.stringify(roundInfo), JSON.stringify(gameStats))
+      });
+    } else {
+      // the game's over!
+    }
+
+    games[gameId].addPlayer(player);
+
+    // tell all the players that a card has been submitted
+    socket.on('submitCardEvent', function(playerString){
+      let player = JSON.parse(playerString);
+      if(player.submittedCard == null){
+        games[gameId].signalNotReadyForSubmission(player);
+      } else {
+        games[gameId].signalReadyForSubmission(player);
+      }
+    });
+
+    // tell all the players that a card has been judged
+    socket.on('cardsJudgedEvent', function(winningCard){
+      games[gameId].judge(winningCard);
+    });
+
+  });
+
+
+
+
+  socket.on('disconnect', function(){
+    delete usernames[socket.username];
+    // games[socket.room].removePlayer(player);
+    socket.leave(socket.room);
+  });
+
+});
+
+var testSettings = new game.GameSettings(false, constants.GAME_MODES.NORMAL, 6, 1, 10, 30, true);
+var defaultDeck = new deck.Deck(cards.WHITE_CARDS, cards.BLACK_CARDS);
+var testGame = new game.HumanityAgainstCards(testSettings, utils.makeId(20), "testGame", defaultDeck);
+
+let games = {};
+games[testGame.gameId] = testGame;
+
+server.listen(3000, function(){
+  console.log("Listening on port 3000");
+});
+
+// let i = 0;
+// io.on('connection', function(socket){
+//
+//   // TODO: insert database code to get the players name and id
+//   let playerName = "player" + i;
+//   let playerId = utils.makeId(20);
+//   let player = new game.Player(playerName, playerId);
+//   i++;
+//
+//   testGame.registerEventHandler(constants.GAME_EVENTS.SUBMITTED_CARD_CHANGED_EVENT, function(numSubmitted, numPlayers){
+//     io.to(socket.id).emit('submittedCardChangedEvent', numSubmitted, numPlayers);
+//   });
+//
+//   testGame.registerEventHandler(constants.GAME_EVENTS.CARDS_COLLECTED_EVENT, function(playerString, roundInfoString, gameStatsString){
+//     io.to(socket.id).emit('cardsCollectedEvent', playerString, roundInfoString, gameStatsString);
+//   });
+//
+//   testGame.registerEventHandler(constants.GAME_EVENTS.ROUND_CHANGE_EVENT, function(playerString, roundInfoString, gameStatsString){
+//     io.to(socket.id).emit('roundChangedEvent', playerString, roundInfoString, gameStatsString);
+//   });
+//
+//   testGame.registerEventHandler(constants.GAME_EVENTS.GAME_OVER_EVENT, function(winnerString, gameStatsString){
+//     io.to(socket.id).emit('gameOverEvent', winnerString, gameStatsString);
+//   });
+//
+//   if(testGame.gameStatus == constants.GAME_STATUS.INITIALIZING){
+//     testGame.registerEventHandler(constants.GAME_EVENTS.GAME_STARTED_EVENT, function(roundInfo, gameStats){
+//       io.to(socket.id).emit('initialize', JSON.stringify(player), JSON.stringify(roundInfo), JSON.stringify(gameStats))
+//     });
+//   } else if(testGame.gameStatus == constants.GAME_STATUS.PLAYING){
+//     console.log("adding player after game started")
+//     testGame.registerEventHandler(constants.GAME_EVENTS.PLAYER_ADDED_AFTER_START_EVENT, function(roundInfo, gameStats){
+//       io.to(socket.id).emit('initialize', JSON.stringify(player), JSON.stringify(roundInfo), JSON.stringify(gameStats))
+//     });
+//   } else {
+//     // the game's over!
+//   }
+//
+//   testGame.addPlayer(player);
+//
+//   // tell all the players that a card has been submitted
+//   socket.on('submitCardEvent', function(playerString){
+//     let player = JSON.parse(playerString);
+//     if(player.submittedCard == null){
+//       testGame.signalNotReadyForSubmission(player);
+//     } else {
+//       testGame.signalReadyForSubmission(player);
+//     }
+//   });
+//
+//   // tell all the players that a card has been judged
+//   socket.on('cardsJudgedEvent', function(winningCard){
+//     testGame.judge(winningCard);
+//   });
+//
+//   socket.on('disconnect', function(){
+//     testGame.removePlayer(player);
+//   })
+// });
 
 // the home page
 app.get('/', function(req, res){
@@ -89,7 +176,55 @@ app.get('/', function(req, res){
 });
 
 app.get('/game', function(req, res){
-  res.sendFile(__dirname + "/views/game-board.html");
+  // res.sendFile(__dirname + "/views/game-board.html");
+  let openGames = [];
+
+  for(var key in games){
+    openGames.push(games[key]);
+  }
+  res.render('game-select', {openGames: openGames});
+});
+
+
+// Used to create new games
+app.post('/game', function(req, res){
+  let nsfw = true;
+  let autoSubmit = true;
+  if(!req.body.isNSFW){
+    nsfw = false;
+  }
+
+  if(!req.body.autoSubmit){
+    autoSubmit = false;
+  }
+
+  let newSettings = new game.GameSettings(nsfw,
+                                       constants.GAME_MODES.NORMAL,
+                                       parseInt(req.body.handSize),
+                                       parseInt(req.body.numRounds),
+                                       Math.floor(parseInt(req.body.numRounds)/2),
+                                       parseInt(req.body.submitTimeLimit),
+                                       autoSubmit);
+  let newDeck = null;
+  if(nsfw){
+    newDeck = new deck.Deck(cards.WHITE_CARDS, cards.BLACK_CARDS);
+  } else {
+    newDeck = new deck.Deck(cards.SFW_WHITE_CARDS, cards.SFW_BLACK_CARDS);
+  }
+
+  let newId = utils.makeId(20);
+  let newGame = new game.HumanityAgainstCards(newSettings, newId, req.body.gameName, newDeck);
+  games[newGame.gameId] = newGame;
+  res.redirect("/game/" + newId);
+});
+
+app.get('/game/:gameId', function(req, res){
+  let currentGame = games[req.params.gameId];
+  if(currentGame){
+    res.sendFile(__dirname + "/views/game-board.html");
+  } else {
+    res.redirect('/game');
+  }
 });
 
 app.get('/login', function(req, res){
@@ -101,8 +236,6 @@ app.get('/prefrences', function(req, res){
   let titleString = name + "'s game preferences"
   let firstName = "Test"
   let lastName = "Player"
-
-
 
   let realName = lastName + ", " + firstName;
   res.render('preferences', {title: titleString,

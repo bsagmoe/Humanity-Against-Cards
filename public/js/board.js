@@ -95,15 +95,32 @@ class Board {
   drawJudgingCzarView(){
     // Should probably only have to change some of the CSS attributes
     // the black card will be the same, can use
-    this.boardElement.prepend("Judging Czar view");
-    $("#" + this.player.id + "-submit-counter").remove();
+    $(".submit-counter").remove();
     this.drawHand(this.roundInfo.submittedCards);
   }
 
   drawJudgingProletariatView(){
     this.boardElement.empty();
-    this.boardElement.prepend("Judging Prole view");
-    this.drawHand(this.roundInfo.submittedCards);
+    this.drawSubmittedCards(this.roundInfo.submittedCards);
+  }
+
+  drawSubmittedCards(cards){
+    let handWidth = cards.length * CARD_WIDTH + (cards.length - 1) * SPACING;
+    let handLeft = this.boardElement.width()/2 - handWidth/2 + this.boardElement.position().left;
+
+    for(let i = 0; i < cards.length; i++){
+      let card = $(document.createElement("div"));
+      card.addClass("white card");
+
+      let text = document.createElement("span");
+      text.innerHTML = cards[i];
+      card.append(text);
+
+      card.css("left", handLeft + i * (SPACING + CARD_WIDTH));
+      card.css("top", window.innerHeight/2 - CARD_HEIGHT/2);
+      card.css("position", "absolute");
+      this.boardElement.append(card);
+    }
   }
 
   drawHand(cards){
