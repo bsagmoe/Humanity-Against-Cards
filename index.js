@@ -27,7 +27,7 @@ app.use(bodyParser.urlencoded({ extended: false }))
 app.use(express.static('public'));
 
 // io.set("transports", ["xhr-polling"]);
-// io.set("polling duration", 10);
+// io.set('polling duration', 10);
 
 var usernames = {};
 var rooms = [];
