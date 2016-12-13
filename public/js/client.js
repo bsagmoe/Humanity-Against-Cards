@@ -1,6 +1,7 @@
 let board = null;
 
 socket.on('connect', function(){
+  console.log("player connected");
   socket.emit('addPlayer', prompt("What screen name do you want to use?"), window.location.href.slice(27));
 });
 
