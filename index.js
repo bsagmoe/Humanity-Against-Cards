@@ -26,7 +26,7 @@ app.set('view engine', 'pug');
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(express.static('public'));
 
-// io.set("transports", ["xhr-polling"]);
+io.set("transports", ["xhr-polling"]);
 // io.set('polling duration', 10);
 
 var usernames = {};
