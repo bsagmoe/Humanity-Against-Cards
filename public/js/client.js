@@ -2,7 +2,8 @@ let board = null;
 
 socket.on('connect', function(){
   console.log("player connected");
-  socket.emit('addPlayer', prompt("What screen name do you want to use?"), window.location.href.slice(27));
+  console.log(window.location.href.slice(-20));
+  socket.emit('addPlayer', prompt("What screen name do you want to use?"), window.location.href.slice(-20));
 });
 
 socket.on('initialize', function(playerString, roundInfoString, gameStatsString){

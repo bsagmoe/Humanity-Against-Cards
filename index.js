@@ -26,9 +26,6 @@ app.set('view engine', 'pug');
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(express.static('public'));
 
-// io.set("transports", ["xhr-polling"]);
-// io.set('polling duration', 10);
-
 var usernames = {};
 var rooms = [];
 
@@ -37,6 +34,8 @@ io.sockets.on('connection', function(socket){
 
   let playerId = utils.makeId(20);
   let player = null;
+
+  console.log("somebody connected");
 
   socket.on('addPlayer', function(username, gameId){
     console.log(username + " added to " + gameId);
