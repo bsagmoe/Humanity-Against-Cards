@@ -17,6 +17,24 @@ var express = require('express'),
     server = require('http').createServer(app),
     io = require('socket.io').listen(server);
 
+var mysql      = require('mysql');
+var connection = mysql.createConnection('mysql://bd632d41d876cd:b148fc87@us-cdbr-iron-east-04.cleardb.net/heroku_04b9ab8da01eb10?reconnect=true');
+
+connection.connect(function(err) {
+  if(err){console.log (err); return;}
+
+  console.log("Connection Success")
+
+});
+
+// connection.query('CREATE TABLE users(id INT PRIMARY KEY AUTO_INCREMENT, name VARCHAR(30))', function(err){
+//   if (err) throw err;
+//
+//   console.log('Succeeded');
+// });
+
+connection.end();
+
 const PORT = process.argv[2];
 server.listen(PORT || 3000);
 
@@ -41,6 +59,21 @@ io.sockets.on('connection', function(socket){
     console.log(username + " added to " + gameId);
     socket.username = username;
     socket.room = gameId;
+
+    connection.connect(function(err){
+
+    });
+
+    connection.query('INSERT INTO users(name), VALUES("'+username+'")', function(err){
+      if(err){
+        console.log(err);
+      } else {
+        console.log(username + " inserted into users");
+      }
+    });
+
+    connection.end();
+
     usernames[username] = username;
 
     player = new game.Player(username, playerId);
