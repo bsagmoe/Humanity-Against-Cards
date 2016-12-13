@@ -60,19 +60,19 @@ io.sockets.on('connection', function(socket){
     socket.username = username;
     socket.room = gameId;
 
-    connection.connect(function(err){
-
-    });
-
-    connection.query('INSERT INTO users(name), VALUES("'+username+'")', function(err){
-      if(err){
-        console.log(err);
-      } else {
-        console.log(username + " inserted into users");
-      }
-    });
-
-    connection.end();
+    // connection.connect(function(err){
+    // 
+    // });
+    //
+    // connection.query('INSERT INTO users(name), VALUES("'+username+'")', function(err){
+    //   if(err){
+    //     console.log(err);
+    //   } else {
+    //     console.log(username + " inserted into users");
+    //   }
+    // });
+    //
+    // connection.end();
 
     usernames[username] = username;
 
