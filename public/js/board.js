@@ -83,8 +83,6 @@ class Board {
 
   drawSubmittingProletariatView(){
     this.boardElement.empty();
-    // this.boardElement.children(".white").remove();
-    // this.boardElement.children(".black").remove();
     this.boardElement.prepend('<div class="submit-counter"></div>');
     $(".submit-counter").text("No cards submitted");
 
@@ -182,7 +180,7 @@ class Board {
         }
       });
 
-      card.css("zIndex", i);
+      card.css("zIndex", cards.length * 10 + i);
       card.css("left", handLeft + i * CARD_OFFSET);
       card.css("bottom", BOTTOM_OFFSET);
       card.css("position", "absolute");
