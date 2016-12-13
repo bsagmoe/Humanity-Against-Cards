@@ -5,6 +5,7 @@ html
     link(rel='stylesheet', href='/stylesheets/main.css', type='text/css')
     link(rel='stylesheet', href='/stylesheets/game-select.css' type='text/css')
     script(src='https://code.jquery.com/jquery-1.12.4.js')
+    script(src='../js/game-select.js')
   body
     div(class='container')
       div(class='column')
@@ -13,13 +14,13 @@ html
           div(class='game')
             a(href='/game/' + game.gameId)
               h2= game.gameName
-            h3= game.players.length + " players"
+            h3= game.players.length + " players, NSFW: " + game.gameSettings.isNSFW
 
       div(class='column')
         h1 New Game
         form(method='post')
           div(class='form-item')
-            label(for='hand-size-input') Game Name:
+            label(for='game-name-input') Game Name:
             input(name='gameName', type='text', placeholder='Game Name', id='game-name-input')
           div(class='form-item')
             label(for='is-NSFW-input') NFSW:
@@ -31,14 +32,17 @@ html
           div(class='form-item')
             label(for='hand-size-input') Hand Size:
             input(name='handSize', type='range', min='3', max='10', value='6', id='hand-size-input')
+            span(id='hand-size-input-display')
           div(class='form-item')
             label(for='num-rounds-input') Num Rounds:
             input(name='numRounds', type='range', min='5', max='25', id='num-rounds-input')
+            span(id='num-rounds-input-display')
           div(class='form-item')
             label(for='submit-limit-input') Submit Time Limit:
             input(name='submitTimeLimit', type='range', min='20', max='60', id='submit-limit-input')
+            span(id='submit-time-limit-display')
           div(class='form-item')
-            lable(for='auto-submit-limit') Auto Submit:
-            input(name='autoSubmit', type='checkbox', checked)
+            label(for='auto-submit-input') Auto Submit:
+            input(name='autoSubmit', type='checkbox', checked, id='auot-submit-input')
           div(class='form-button')
-            input(type='submit', value='Create Game')
+            input(type='submit', value='Create Game', id='create-game-button')

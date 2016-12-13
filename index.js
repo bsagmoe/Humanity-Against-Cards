@@ -86,89 +86,39 @@ io.sockets.on('connection', function(socket){
       games[gameId].judge(winningCard);
     });
 
+    socket.on('disconnect', function(){
+      console.log(socket.username + " disconnected");
+      delete usernames[socket.username];
+      games[socket.room].removePlayer(player);
+      socket.leave(socket.room);
+    });
+
   });
 
 
 
 
-  socket.on('disconnect', function(){
-    delete usernames[socket.username];
-    // games[socket.room].removePlayer(player);
-    socket.leave(socket.room);
-  });
+  // socket.on('disconnect', function(){
+  //   delete usernames[socket.username];
+  //   games[socket.room].removePlayer(player);
+  //   socket.leave(socket.room);
+  // });
 
 });
 
-var testSettings = new game.GameSettings(false, constants.GAME_MODES.NORMAL, 6, 1, 10, 30, true);
+var testSettings = new game.GameSettings(true, constants.GAME_MODES.NORMAL, 6, 1, 10, 30, true);
 var defaultDeck = new deck.Deck(cards.WHITE_CARDS, cards.BLACK_CARDS);
 var testGame = new game.HumanityAgainstCards(testSettings, utils.makeId(20), "testGame", defaultDeck);
 
 let games = {};
 games[testGame.gameId] = testGame;
 
-server.listen(3000, function(){
-  console.log("Listening on port 3000");
-});
+let port = process.argv[2];
+console.log(process.argv);
 
-// let i = 0;
-// io.on('connection', function(socket){
-//
-//   // TODO: insert database code to get the players name and id
-//   let playerName = "player" + i;
-//   let playerId = utils.makeId(20);
-//   let player = new game.Player(playerName, playerId);
-//   i++;
-//
-//   testGame.registerEventHandler(constants.GAME_EVENTS.SUBMITTED_CARD_CHANGED_EVENT, function(numSubmitted, numPlayers){
-//     io.to(socket.id).emit('submittedCardChangedEvent', numSubmitted, numPlayers);
-//   });
-//
-//   testGame.registerEventHandler(constants.GAME_EVENTS.CARDS_COLLECTED_EVENT, function(playerString, roundInfoString, gameStatsString){
-//     io.to(socket.id).emit('cardsCollectedEvent', playerString, roundInfoString, gameStatsString);
-//   });
-//
-//   testGame.registerEventHandler(constants.GAME_EVENTS.ROUND_CHANGE_EVENT, function(playerString, roundInfoString, gameStatsString){
-//     io.to(socket.id).emit('roundChangedEvent', playerString, roundInfoString, gameStatsString);
-//   });
-//
-//   testGame.registerEventHandler(constants.GAME_EVENTS.GAME_OVER_EVENT, function(winnerString, gameStatsString){
-//     io.to(socket.id).emit('gameOverEvent', winnerString, gameStatsString);
-//   });
-//
-//   if(testGame.gameStatus == constants.GAME_STATUS.INITIALIZING){
-//     testGame.registerEventHandler(constants.GAME_EVENTS.GAME_STARTED_EVENT, function(roundInfo, gameStats){
-//       io.to(socket.id).emit('initialize', JSON.stringify(player), JSON.stringify(roundInfo), JSON.stringify(gameStats))
-//     });
-//   } else if(testGame.gameStatus == constants.GAME_STATUS.PLAYING){
-//     console.log("adding player after game started")
-//     testGame.registerEventHandler(constants.GAME_EVENTS.PLAYER_ADDED_AFTER_START_EVENT, function(roundInfo, gameStats){
-//       io.to(socket.id).emit('initialize', JSON.stringify(player), JSON.stringify(roundInfo), JSON.stringify(gameStats))
-//     });
-//   } else {
-//     // the game's over!
-//   }
-//
-//   testGame.addPlayer(player);
-//
-//   // tell all the players that a card has been submitted
-//   socket.on('submitCardEvent', function(playerString){
-//     let player = JSON.parse(playerString);
-//     if(player.submittedCard == null){
-//       testGame.signalNotReadyForSubmission(player);
-//     } else {
-//       testGame.signalReadyForSubmission(player);
-//     }
-//   });
-//
-//   // tell all the players that a card has been judged
-//   socket.on('cardsJudgedEvent', function(winningCard){
-//     testGame.judge(winningCard);
-//   });
-//
-//   socket.on('disconnect', function(){
-//     testGame.removePlayer(player);
-//   })
-// });
+server.listen(port, function(){
+  console.log("Listening on port " + port);
+});
 
 // the home page
 app.get('/', function(req, res){

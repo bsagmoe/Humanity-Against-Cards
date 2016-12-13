@@ -15,6 +15,9 @@
   "bugs": {
     "url": "https://github.com/bsagmoe/humanity-against-cards/issues"
   },
+  "engines": {
+    "node": "6.9.2"
+  },
   "homepage": "https://github.com/bsagmoe/humanity-against-cards#readme",
   "dependencies": {
     "body-parser": "^1.15.2",

@@ -10,9 +10,29 @@
 }
 
 .form-item {
-  height: 40px;
-  font-size: 2em;
+  font-size: 1.5em;
+  padding: .5em 0;
+  display: flex;
   border-bottom: thin solid black;
+}
+
+.form-item > label {
+  flex: 1;
+}
+
+.form-item > input {
+  flex: 1;
+}
+
+.form-item > span {
+  flex: 1;
+  text-align: right;
+}
+
+#create-game-button {
+  display: block;
+  width: 60%;
+  margin: 0 auto;
 }
 
 .game {
